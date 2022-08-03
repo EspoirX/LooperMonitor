@@ -4,7 +4,6 @@ apply plugin: 'kotlin-android'
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "com.lzx.LooperMonitor"
         minSdkVersion 16
         targetSdkVersion 28
         versionCode 1
@@ -33,4 +32,8 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'com.github.tiann:FreeReflection:3.1.0'
+}
+
+repositories {
+    mavenCentral()
 }
