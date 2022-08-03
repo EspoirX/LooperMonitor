@@ -4,8 +4,9 @@ buildscript {
         kotlin_version = '1.4.10'
     }
     repositories {
-        jcenter()
         google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.0'
@@ -16,8 +17,8 @@ buildscript {
 allprojects {
     repositories {
         google()
-        jcenter()
-        maven { url "https://jitpack.io" }
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
     tasks.withType(JavaCompile) {    //设置全局编码
         options.encoding = "UTF-8"
