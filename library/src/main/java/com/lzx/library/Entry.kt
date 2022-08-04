@@ -1,13 +1,12 @@
 package com.lzx.library
 
-import android.os.Handler
 import android.os.Message
 
 class Entry {
-    /**
-     * msg的target handler，如果采用 setMessageLogging 方式，该值为 null，这时候看 msgTarget 字段即可
-     */
-    var handler: Handler? = null
+
+    var handlerClassName: String? = null
+
+    var threadName: String? = null
 
     /**
      * 有callback的handler为callback类名 没有callback则为msg.what的十六进制表示(msg.callback)
@@ -75,6 +74,16 @@ class Entry {
      */
     var mHMsgWhat: String? = null
 
+    /**
+     * 当前时间
+     */
+    var currTime: String? = null
+
+    /**
+     * 消息类型
+     */
+    var msgType: MsgType? = null
+
     fun reset() {
         messageCount = 0
         recordedMessageCount = 0
@@ -88,20 +97,44 @@ class Entry {
 
     constructor(specialEntryName: String) {
         messageName = specialEntryName
-        handler = null
     }
 
     constructor(msg: Message) {
-        handler = msg.target
-        messageName = handler?.getMessageName(msg)
+        handlerClassName = msg.target?.javaClass?.name
+        threadName = msg.target?.looper?.thread?.name
+        messageName = msg.target?.getMessageName(msg)
         msgTarget = msg.target.toString()
         msgWhat = msg.what.toString()
     }
 
     constructor(target: String, callback: String?, what: String) {
         msgTarget = target
+        handlerClassName = msgTarget
         messageName = callback.toString()
         msgWhat = what
+    }
+
+    override fun toString(): String {
+        return "{\n" +
+            "    \"msgType\":" + msgType?.name + ",\n" +
+            "    \"currTime\":" + currTime + ",\n" +
+            "    \"handlerClassName\":" + handlerClassName + ",\n" +
+            "    \"threadName\":" + threadName + ",\n" +
+            "    \"messageName\":" + messageName + ",\n" +
+            "    \"messageCount\":" + messageCount + ",\n" +
+            "    \"recordedMessageCount\":" + recordedMessageCount + ",\n" +
+            "    \"exceptionCount\":" + exceptionCount + ",\n" +
+            "    \"latencyMicro\":" + latencyMicro + ",\n" +
+            "    \"totalLatencyMicros\":" + totalLatencyMicro + ",\n" +
+            "    \"maxLatencyMicros\":" + maxLatencyMicro + ",\n" +
+            "    \"maxDelayMillis\":" + maxDelayMillis + ",\n" +
+            "    \"delayMillis\":" + delayMillis + ",\n" +
+            "    \"recordedDelayMessageCount\":" + recordedDelayMessageCount + ",\n" +
+            "    \"target\":" + msgTarget + ",\n" +
+            "    \"what\":" + msgWhat + ",\n" +
+            "    \"mHMsgWhat\":" + mHMsgWhat + "\n" +
+            "}\n" +
+            "    ----------------------------------------------------"
     }
 
     companion object {

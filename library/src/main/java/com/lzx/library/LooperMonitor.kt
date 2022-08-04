@@ -6,25 +6,31 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.os.MessageQueue
 import android.os.SystemClock
+import android.util.Log
 import android.util.SparseArray
 import me.weishu.reflection.Reflection
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Proxy
+import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentLinkedQueue
 
 object LooperMonitor {
 
+    private var mH: Handler? = null
     private var mHMsgWhat = 0
     private val mSessionPool = ConcurrentLinkedQueue<DispatchSession>()
     private val mEntries = SparseArray<Entry>(512)
+    val entryList = mutableListOf<Entry>()
     private var mSamplingInterval = 1000 //采样间隔
     private const val SESSION_POOL_SIZE = 500
     private const val mEntriesSizeCap = 1500 //msg类型最大量
     private val mLock = Any()
-
+    var formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
     private val mOverflowEntry = Entry("OVERFLOW")
     private val mHashCollisionEntry = Entry("HASH_COLLISION")
+    var callback: EntryCallback? = null
 
     fun init(context: Context) {
         if (Build.VERSION.SDK_INT >= 28) {
@@ -34,7 +40,7 @@ object LooperMonitor {
     }
 
     @SuppressLint("PrivateApi", "DiscouragedPrivateApi")
-    private fun hookActivityThreadHandler(context: Context) {
+    private fun getActivityThreadHandler(): Handler {
         val activityThread = Class.forName("android.app.ActivityThread")
         val sCurrentActivityThreadF = activityThread.getDeclaredField("sCurrentActivityThread")
         sCurrentActivityThreadF.isAccessible = true
@@ -43,6 +49,15 @@ object LooperMonitor {
         val mHF = activityThread.getDeclaredField("mH")
         mHF.isAccessible = true
         val mH = mHF.get(sCurrentActivityThread)
+        return mH as Handler
+    }
+
+    @SuppressLint("DiscouragedPrivateApi")
+    private fun hookActivityThreadHandler(context: Context) {
+        if (mH == null) {
+            mH = getActivityThreadHandler()
+        }
+        if (mH == null) return
         if (Build.VERSION.SDK_INT >= 28) {
             hookLooperObserver(context)
         } else {
@@ -77,17 +92,14 @@ object LooperMonitor {
                     if (shouldCollectDetailedData()) {
                         val session = args[0] as DispatchSession
                         val msg = args[1] as Message
-                        var latency = getElapsedRealtimeMicro() - session.startTimeMicro
-                        if (latency < 30) { //过滤小消息
-                            return@InvocationHandler null
-                        }
                         val entry = findEntry(msg, session !== DispatchSession.NOT_SAMPLED)
                         if (entry != null) {
                             synchronized(entry) {
                                 entry.messageCount++
+                                entry.currTime = formatter.format(System.currentTimeMillis())
                                 if (session !== DispatchSession.NOT_SAMPLED) {
                                     entry.recordedMessageCount++
-                                    latency = getElapsedRealtimeMicro() - session.startTimeMicro
+                                    val latency = getElapsedRealtimeMicro() - session.startTimeMicro
                                     entry.latencyMicro = latency
                                     entry.totalLatencyMicro += latency
                                     entry.maxLatencyMicro = entry.maxLatencyMicro.coerceAtLeast(latency)
@@ -98,6 +110,19 @@ object LooperMonitor {
                                         entry.recordedDelayMessageCount++
                                     }
                                     entry.mHMsgWhat = Entry.codeToString(mHMsgWhat)
+                                    if (entry.msgTarget?.contains("ActivityThread") == true) {
+                                        entry.msgType = MsgType.SystemMsg
+                                    } else if (entry.latencyMicro < 30) {
+                                        entry.msgType = MsgType.ClusterMsg
+                                    } else if (entry.latencyMicro in 30..200) {
+                                        entry.msgType = MsgType.RollingMsg
+                                    } else if (entry.latencyMicro > 200) {
+                                        entry.msgType = MsgType.FatMsg
+                                    }
+                                }
+                                if (entry.latencyMicro > 30) {
+                                    Log.i("BBBB", "name = " + entry.msgType?.name)
+                                    callback?.onEntry(entry)
                                 }
                             }
                         } else {
@@ -116,6 +141,8 @@ object LooperMonitor {
                         if (entry != null) {
                             synchronized(entry) {
                                 entry.exceptionCount++
+                                entry.currTime = formatter.format(System.currentTimeMillis())
+                                callback?.onEntry(entry)
                             }
                         } else {
                             //NOTHING
@@ -154,10 +181,6 @@ object LooperMonitor {
                 session?.systemUptimeMillis = getSystemUptimeMillis()
             } else {
                 if (session != null) {
-                    var latency = getElapsedRealtimeMicro() - session!!.startTimeMicro
-                    if (latency < 30) { //过滤小消息
-                        return@setMessageLogging
-                    }
                     val entry = findEntry(
                         target = msgTarget,
                         callback = msgCallback,
@@ -166,14 +189,27 @@ object LooperMonitor {
                     )
                     if (entry != null) {
                         synchronized(entry) {
+                            entry.currTime = formatter.format(System.currentTimeMillis())
                             entry.messageCount++
                             if (session !== DispatchSession.NOT_SAMPLED) {
                                 entry.recordedMessageCount++
-                                latency = getElapsedRealtimeMicro() - session!!.startTimeMicro
+                                val latency = getElapsedRealtimeMicro() - session!!.startTimeMicro
                                 entry.latencyMicro = latency
                                 entry.totalLatencyMicro += latency
                                 entry.maxLatencyMicro = entry.maxLatencyMicro.coerceAtLeast(latency)
                                 entry.mHMsgWhat = Entry.codeToString(mHMsgWhat)
+                                if (entry.msgTarget?.contains("ActivityThread") == true) {
+                                    entry.msgType = MsgType.SystemMsg
+                                } else if (entry.latencyMicro < 30) {
+                                    entry.msgType = MsgType.ClusterMsg
+                                } else if (entry.latencyMicro in 30..200) {
+                                    entry.msgType = MsgType.RollingMsg
+                                } else if (entry.latencyMicro > 200) {
+                                    entry.msgType = MsgType.FatMsg
+                                }
+                            }
+                            if (entry.latencyMicro > 30) {
+                                callback?.onEntry(entry)
                             }
                         }
                     }
@@ -181,6 +217,14 @@ object LooperMonitor {
                 }
             }
         }
+    }
+
+    @SuppressLint("SoonBlockedPrivateApi")
+    private fun hookMessageQueue() {
+        if (mH == null) return
+        val queueF = Handler::class.java.getDeclaredField("mQueue")
+        queueF.isAccessible = true
+        val queue = queueF.get(mH) as MessageQueue
     }
 
     private fun findEntry(msg: Message, allowCreateNew: Boolean): Entry? {
@@ -199,9 +243,9 @@ object LooperMonitor {
                 }
             }
         }
-        //发送hash冲突
-        if (entry?.handler?.javaClass != msg.target.javaClass
-            || entry?.handler?.looper?.thread !== msg.target.looper.thread
+        //发生hash冲突
+        if (entry?.handlerClassName != msg.target.javaClass.name
+            || entry?.threadName !== msg.target.looper.thread.name
         ) {
             return mHashCollisionEntry
         }
@@ -227,7 +271,7 @@ object LooperMonitor {
                 }
             }
         }
-        //发送hash冲突
+        //发生hash冲突
         if (entry?.msgTarget != target
             || entry?.messageName != callback
             || entry?.msgWhat != what
@@ -248,14 +292,14 @@ object LooperMonitor {
     /**
      * 获取数据
      */
-    fun getEntries(): MutableList<ExportedEntry> {
-        val exportedEntries: ArrayList<ExportedEntry>
+    fun getEntries(): MutableList<Entry> {
+        val exportedEntries: ArrayList<Entry>
         synchronized(mLock) {
             val size = mEntries.size()
             exportedEntries = ArrayList(size)
             for (i in 0 until size) {
                 val entry: Entry = mEntries.valueAt(i)
-                synchronized(entry) { exportedEntries.add(ExportedEntry(entry)) }
+                synchronized(entry) { exportedEntries.add(entry) }
             }
         }
         maybeAddSpecialEntry(exportedEntries, mOverflowEntry)
@@ -263,13 +307,26 @@ object LooperMonitor {
         return exportedEntries
     }
 
+    fun getMsgList(): MutableList<Entry> {
+        val exportedEntries: MutableList<Entry>
+        synchronized(mLock) {
+            val size = entryList.size
+            exportedEntries = mutableListOf()
+            for (i in 0 until size) {
+                val entry: Entry = entryList[i]
+                synchronized(entry) { exportedEntries.add(entry) }
+            }
+        }
+        return exportedEntries
+    }
+
     private fun maybeAddSpecialEntry(
-        exportedEntries: MutableList<ExportedEntry>,
+        exportedEntries: MutableList<Entry>,
         specialEntry: Entry
     ) {
         synchronized(specialEntry) {
             if (specialEntry.messageCount > 0 || specialEntry.exceptionCount > 0) {
-                exportedEntries.add(ExportedEntry(specialEntry))
+                exportedEntries.add(specialEntry)
             }
         }
     }
@@ -286,7 +343,7 @@ object LooperMonitor {
      * 开机到现在包括系统深度睡眠的微秒
      */
     private fun getElapsedRealtimeMicro(): Long {
-        return SystemClock.elapsedRealtimeNanos() / 1000
+        return SystemClock.elapsedRealtimeNanos() / 1000000
     }
 
     /**
@@ -295,4 +352,8 @@ object LooperMonitor {
     private fun getSystemUptimeMillis(): Long {
         return SystemClock.uptimeMillis()
     }
+}
+
+interface EntryCallback {
+    fun onEntry(entry: Entry)
 }
