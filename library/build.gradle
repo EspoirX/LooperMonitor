@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion 28
@@ -26,12 +27,26 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
+    afterEvaluate {
+        publishing {
+            def versionName = "1.0"
+            publications {
+                release(MavenPublication) {
+                    groupId = 'com.lzx.LooperMonitor'
+                    artifactId = 'library'
+                    version = versionName
+                }
+            }
+        }
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     //noinspection GradleCompatible
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation 'androidx.appcompat:appcompat:1.3.0'
     implementation 'com.github.tiann:FreeReflection:3.1.0'
 }
