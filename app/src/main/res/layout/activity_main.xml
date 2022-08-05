@@ -37,8 +37,8 @@
             android:orientation="horizontal">
 
             <View
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
                 android:layout_marginRight="5dp"
                 android:background="#78b3f3" />
 
@@ -47,11 +47,11 @@
                 android:layout_height="wrap_content"
                 android:text="Sys"
                 android:textColor="#ffffff"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <View
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="5dp"
                 android:background="#96c485" />
@@ -61,11 +61,11 @@
                 android:layout_height="wrap_content"
                 android:text="Rolling"
                 android:textColor="#ffffff"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <View
-                android:layout_width="15dp"
-                android:layout_height="15dp"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
                 android:layout_marginLeft="20dp"
                 android:layout_marginRight="5dp"
                 android:background="#e15436" />
@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:text="Fat"
                 android:textColor="#ffffff"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
 
             <View
                 android:layout_width="15dp"
@@ -92,42 +92,22 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/tabNumLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@+id/tab"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal" />
 
-        <View
-            android:id="@+id/tabLine"
-            android:layout_width="match_parent"
-            android:layout_height="1px"
-            android:layout_below="@+id/tabNumLayout"
-            android:layout_marginLeft="15dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginRight="15dp"
-            android:background="#fff" />
-
-        <LinearLayout
-            android:id="@+id/tabLineLayout"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@+id/tabLine"
-            android:layout_marginLeft="15dp"
-            android:layout_marginRight="15dp"
-            android:orientation="horizontal" />
-
-        <androidx.recyclerview.widget.RecyclerView
+        <com.lzx.loopermonitor.CoordinateView
             android:id="@+id/recycleView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_below="@+id/tabNumLayout"
-            android:layout_marginLeft="15dp"
-            android:layout_marginTop="15dp"
-            android:layout_marginRight="15dp"
-            android:visibility="visible" />
+            android:layout_below="@+id/tab"
+            android:layout_marginLeft="15dp" />
+
+<!--        <androidx.recyclerview.widget.RecyclerView-->
+<!--            android:id="@+id/recycleView"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:layout_below="@+id/tab"-->
+<!--            android:layout_marginLeft="15dp"-->
+<!--            android:layout_marginTop="25dp"-->
+<!--            android:visibility="visible" />-->
     </RelativeLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -136,6 +116,6 @@
         android:layout_height="match_parent"
         android:layout_below="@+id/monitorLayout"
         android:layout_marginLeft="15dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="15dp"
         android:layout_marginRight="15dp" />
 </RelativeLayout>

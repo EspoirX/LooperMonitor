@@ -6,7 +6,7 @@
 
     <TextView
         android:id="@+id/titleName"
-        android:layout_width="100dp"
+        android:layout_width="66dp"
         android:layout_height="wrap_content"
         android:text="类型"
         android:textColor="#000" />

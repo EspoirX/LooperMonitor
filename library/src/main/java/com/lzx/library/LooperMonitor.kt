@@ -8,7 +8,6 @@ import android.os.Looper
 import android.os.Message
 import android.os.MessageQueue
 import android.os.SystemClock
-import android.util.Log
 import android.util.SparseArray
 import me.weishu.reflection.Reflection
 import java.lang.reflect.InvocationHandler
@@ -119,6 +118,7 @@ object LooperMonitor {
                                     } else if (entry.latencyMicro > 200) {
                                         entry.msgType = MsgType.FatMsg
                                     }
+                                    entry.stack = msg.toString() //getStack(msg.target?.looper)
                                 }
                                 if (entry.latencyMicro > 30) {
                                     callback?.onEntry(entry)
@@ -158,6 +158,16 @@ object LooperMonitor {
         val proxy = Proxy.newProxyInstance(context.classLoader, arrayOf(observer), invocationHandler)
         val looper = Looper.getMainLooper().javaClass.getMethod("setObserver", observer)
         looper.invoke(null, proxy)
+    }
+
+    private fun getStack(looper: Looper?): String? {
+        val sb = StringBuilder()
+        val stackTrace = looper?.thread?.stackTrace ?: return null
+        for (s in stackTrace) {
+            sb.append(s.toString())
+            sb.append("\n")
+        }
+        return sb.toString()
     }
 
     private fun setLooperMessageLogging() {

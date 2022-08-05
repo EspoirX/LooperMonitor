@@ -115,6 +115,7 @@ class Entry {
         this.mHMsgWhat = entry.mHMsgWhat
         this.currTime = entry.currTime
         this.msgType = entry.msgType
+        this.stack = entry.stack
         return this
     }
 

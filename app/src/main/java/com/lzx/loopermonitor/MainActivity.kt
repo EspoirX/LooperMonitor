@@ -2,15 +2,11 @@ package com.lzx.loopermonitor
 
 import android.content.res.Resources
 import android.graphics.Color
-import android.graphics.Paint
 import android.os.Bundle
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -30,7 +26,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
-    private var recyclerView: RecyclerView? = null
+    private var recyclerView: CoordinateView? = null
     private var detailView: RecyclerView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +35,6 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recycleView)
         detailView = findViewById(R.id.detailInfo)
 
-        setBackgroundUI()
         initRecyclerView()
         initDetailInfo()
 
@@ -68,63 +63,20 @@ class MainActivity : AppCompatActivity() {
         awaitClose { callback = null }
     }
 
-    private fun setBackgroundUI() {
-        val tabNumLayout = findViewById<LinearLayout>(R.id.tabNumLayout)
-        val tabLineLayout = findViewById<LinearLayout>(R.id.tabLineLayout)
-        val paint = Paint()
-        paint.textSize = 14f
-        tabNumLayout.post {
-            val leftM = dp(15f) - paint.measureText("0") / 2
-            setMargins(tabNumLayout, leftM.toInt(), 0, 0, 0, false)
-            val layoutWidth = tabNumLayout.measuredWidth
-            val itemWidth = layoutWidth.toFloat() / 10f
-            for (i in 0..5) {
-                val num = TextView(this)
-                val text = (i * 100).toString()
-                val length = paint.measureText(text)
-                num.text = text
-                num.textSize = 14f
-                num.setTextColor(Color.WHITE)
-                num.layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                val left = itemWidth * i
-                val translationX = left - length / 2
-                num.translationX = if (translationX < 0) 0f else translationX
-                tabNumLayout.addView(num)
-
-                val line = View(this)
-                line.layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
-                line.setBackgroundColor(if (i == 2) Color.parseColor("#e15436") else Color.WHITE)
-                when (i) {
-                    0 -> line.translationX = 0f
-                    1 -> line.translationX = 141f
-                    2 -> line.translationX = 314f
-                    3 -> line.translationX = 480f
-                    4 -> line.translationX = 650f
-                    5 -> line.translationX = 828f
-                }
-                tabLineLayout.addView(line)
-            }
-        }
-    }
 
     private fun initRecyclerView() {
-        val maxWidth = Resources.getSystem().displayMetrics.widthPixels - dp(60f)
         recyclerView?.linear()?.setup {
             addType<Entry>(R.layout.item_monitor)
             onBind {
                 val info = getModel<Entry>()
-                Log.i("AAA", "info=" + info.latencyMicro)
-                var f = info.latencyMicro.toFloat() / 550f
+                var f = info.latencyMicro.toFloat() / 1000f
                 if (f > 1) {
                     f = 1f
                 }
-                val length = f * maxWidth
+                val length = f * recyclerView!!.measuredWidth.toFloat()
                 val item = findView<View>(R.id.monitorItem)
                 item.layoutParams.width = length.toInt()
-                item.tag = info
+                setMargins(item, dp(1f), if (modelPosition == 0) dp(25f) else dp(5f), 0, 0, false)
                 when (info.msgType) {
                     MsgType.ClusterMsg -> {
                         item.setBackgroundColor(Color.parseColor("#807C7C"))
@@ -163,7 +115,7 @@ class MainActivity : AppCompatActivity() {
         detailView?.linear()?.setup {
             addType<DetailInfo>(R.layout.item_detail)
             onBind {
-                R.id.titleName.setText(getModel<DetailInfo>().title)
+                R.id.titleName.setText(getModel<DetailInfo>().title+":  ")
                 R.id.detailInfo.setText(getModel<DetailInfo>().detail)
             }
         }?.models = mutableListOf<DetailInfo>()

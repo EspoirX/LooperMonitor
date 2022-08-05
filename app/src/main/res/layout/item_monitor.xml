@@ -7,7 +7,7 @@
     <View
         android:id="@+id/monitorItem"
         android:layout_width="wrap_content"
-        android:layout_height="20dp"
-        android:layout_marginTop="10dp"
+        android:layout_height="15dp"
+        android:layout_marginTop="5dp"
         android:background="#807C7C" />
 </LinearLayout>
