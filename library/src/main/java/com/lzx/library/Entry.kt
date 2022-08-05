@@ -84,6 +84,8 @@ class Entry {
      */
     var msgType: MsgType? = null
 
+    var stack: String? = null
+
     fun reset() {
         messageCount = 0
         recordedMessageCount = 0
@@ -94,6 +96,29 @@ class Entry {
         maxDelayMillis = 0
         recordedDelayMessageCount = 0
     }
+
+    fun copy(entry: Entry): Entry {
+        this.handlerClassName = entry.handlerClassName
+        this.threadName = entry.threadName
+        this.messageName = entry.messageName
+        this.messageCount = entry.messageCount
+        this.recordedMessageCount = entry.recordedMessageCount
+        this.exceptionCount = entry.exceptionCount
+        this.totalLatencyMicro = entry.totalLatencyMicro
+        this.maxLatencyMicro = entry.maxLatencyMicro
+        this.latencyMicro = entry.latencyMicro
+        this.recordedDelayMessageCount = entry.recordedDelayMessageCount
+        this.delayMillis = entry.delayMillis
+        this.maxDelayMillis = entry.maxDelayMillis
+        this.msgTarget = entry.msgTarget
+        this.msgWhat = entry.msgWhat
+        this.mHMsgWhat = entry.mHMsgWhat
+        this.currTime = entry.currTime
+        this.msgType = entry.msgType
+        return this
+    }
+
+    constructor()
 
     constructor(specialEntryName: String) {
         messageName = specialEntryName
@@ -114,28 +139,28 @@ class Entry {
         msgWhat = what
     }
 
-    override fun toString(): String {
-        return "{\n" +
-            "    \"msgType\":" + msgType?.name + ",\n" +
-            "    \"currTime\":" + currTime + ",\n" +
-            "    \"handlerClassName\":" + handlerClassName + ",\n" +
-            "    \"threadName\":" + threadName + ",\n" +
-            "    \"messageName\":" + messageName + ",\n" +
-            "    \"messageCount\":" + messageCount + ",\n" +
-            "    \"recordedMessageCount\":" + recordedMessageCount + ",\n" +
-            "    \"exceptionCount\":" + exceptionCount + ",\n" +
-            "    \"latencyMicro\":" + latencyMicro + ",\n" +
-            "    \"totalLatencyMicros\":" + totalLatencyMicro + ",\n" +
-            "    \"maxLatencyMicros\":" + maxLatencyMicro + ",\n" +
-            "    \"maxDelayMillis\":" + maxDelayMillis + ",\n" +
-            "    \"delayMillis\":" + delayMillis + ",\n" +
-            "    \"recordedDelayMessageCount\":" + recordedDelayMessageCount + ",\n" +
-            "    \"target\":" + msgTarget + ",\n" +
-            "    \"what\":" + msgWhat + ",\n" +
-            "    \"mHMsgWhat\":" + mHMsgWhat + "\n" +
-            "}\n" +
-            "    ----------------------------------------------------"
-    }
+//    override fun toString(): String {
+//        return "{\n" +
+//            "    \"msgType\":" + msgType?.name + ",\n" +
+//            "    \"currTime\":" + currTime + ",\n" +
+//            "    \"handlerClassName\":" + handlerClassName + ",\n" +
+//            "    \"threadName\":" + threadName + ",\n" +
+//            "    \"messageName\":" + messageName + ",\n" +
+//            "    \"messageCount\":" + messageCount + ",\n" +
+//            "    \"recordedMessageCount\":" + recordedMessageCount + ",\n" +
+//            "    \"exceptionCount\":" + exceptionCount + ",\n" +
+//            "    \"latencyMicro\":" + latencyMicro + ",\n" +
+//            "    \"totalLatencyMicros\":" + totalLatencyMicro + ",\n" +
+//            "    \"maxLatencyMicros\":" + maxLatencyMicro + ",\n" +
+//            "    \"maxDelayMillis\":" + maxDelayMillis + ",\n" +
+//            "    \"delayMillis\":" + delayMillis + ",\n" +
+//            "    \"recordedDelayMessageCount\":" + recordedDelayMessageCount + ",\n" +
+//            "    \"target\":" + msgTarget + ",\n" +
+//            "    \"what\":" + msgWhat + ",\n" +
+//            "    \"mHMsgWhat\":" + mHMsgWhat + "\n" +
+//            "}\n" +
+//            "    ----------------------------------------------------"
+//    }
 
     companion object {
         fun idFor(msg: Message): Int {

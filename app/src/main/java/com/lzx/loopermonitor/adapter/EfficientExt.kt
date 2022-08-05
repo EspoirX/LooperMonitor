@@ -126,8 +126,7 @@ fun RecyclerView.notifyItemChanged(position: Int, data: Any?, payload: Boolean =
 
 fun RecyclerView.notifyItemInserted(position: Int, data: Any?) {
     this.mutable?.add(position, data)
-    efficientAdapter.notifyDataSetChanged()
-//    efficientAdapter.notifyItemInserted(position)
+    efficientAdapter.notifyItemInserted(position)
 }
 
 /**

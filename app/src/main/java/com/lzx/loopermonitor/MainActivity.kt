@@ -6,41 +6,69 @@ import android.graphics.Paint
 import android.os.Bundle
 import android.util.Log
 import android.util.TypedValue
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.lze.loopermonitor.R
 import com.lzx.library.Entry
 import com.lzx.library.EntryCallback
 import com.lzx.library.LooperMonitor
 import com.lzx.library.MsgType
-import com.lzx.loopermonitor.adapter.efficientAdapter
 import com.lzx.loopermonitor.adapter.linear
-import com.lzx.loopermonitor.adapter.mutable
+import com.lzx.loopermonitor.adapter.models
 import com.lzx.loopermonitor.adapter.notifyItemInserted
 import com.lzx.loopermonitor.adapter.setup
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
+    private var recyclerView: RecyclerView? = null
+    private var detailView: RecyclerView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
+        recyclerView = findViewById(R.id.recycleView)
+        detailView = findViewById(R.id.detailInfo)
 
+        setBackgroundUI()
+        initRecyclerView()
+        initDetailInfo()
 
         findViewById<Button>(R.id.btn).setOnClickListener {
             Thread.sleep(5000)
         }
+        findViewById<Button>(R.id.start).setOnClickListener {
 
-        val maxWidth = Resources.getSystem().displayMetrics.widthPixels - dp(60f)
+        }
 
+        lifecycleScope.launch {
+            LooperMonitor.entryFlow()
+                .collectLatest { entry ->
+                    recyclerView?.notifyItemInserted(0, Entry().copy(entry))
+                    recyclerView?.scrollToPosition(0)
+                }
+        }
+    }
+
+    private fun LooperMonitor.entryFlow() = callbackFlow<Entry> {
+        callback = object : EntryCallback {
+            override fun onEntry(entry: Entry) {
+                offer(entry)
+            }
+        }
+        awaitClose { callback = null }
+    }
+
+    private fun setBackgroundUI() {
         val tabNumLayout = findViewById<LinearLayout>(R.id.tabNumLayout)
         val tabLineLayout = findViewById<LinearLayout>(R.id.tabLineLayout)
         val paint = Paint()
@@ -80,127 +108,76 @@ class MainActivity : AppCompatActivity() {
                 tabLineLayout.addView(line)
             }
         }
+    }
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recycleView)
-        val adapter = MonitorAdapter()
-        recyclerView.linear().adapter = adapter
-//        recyclerView.linear().setup {
-//            addType<Entry>(R.layout.item_monitor)
-//            onBind {
-//                val info = getModel<Entry>()
-//                var f = info.latencyMicro.toFloat() / 550f
-//                if (f > 1) {
-//                    f = 1f
-//                }
-//                val length = f * maxWidth
-//                val item = findView<View>(R.id.monitorItem)
-//                item.layoutParams.width = length.toInt()
-//                item.tag = info
-//                when (info.msgType) {
-//                    MsgType.ClusterMsg -> {
-//                        item.setBackgroundColor(Color.parseColor("#807C7C"))
-//                    }
-//                    MsgType.RollingMsg -> {
-//                        item.setBackgroundColor(Color.parseColor("#96c485"))
-//                    }
-//                    MsgType.FatMsg -> {
-//                        item.setBackgroundColor(Color.parseColor("#e15436"))
-//                    }
-//                    MsgType.SystemMsg -> {
-//                        item.setBackgroundColor(Color.parseColor("#78b3f3"))
-//                    }
-//                    else -> {
-//                        item.setBackgroundColor(Color.parseColor("#807C7C"))
-//                    }
-//                }
-//                item.setOnClickListener {
-//                    val data = it.tag as Entry
-//                    Toast.makeText(this@MainActivity, data.msgType?.name, Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//        }.models = mutableListOf<Entry>()
-
-        LooperMonitor.callback = object : EntryCallback {
-            override fun onEntry(entry: Entry) {
-                runOnUiThread {
-//                    recyclerView.notifyItemInserted(0, entry)
-//                    recyclerView.scrollToPosition(0)
-                    adapter.list.forEach {
-                        Log.i("BBBB",it.msgType?.name)
+    private fun initRecyclerView() {
+        val maxWidth = Resources.getSystem().displayMetrics.widthPixels - dp(60f)
+        recyclerView?.linear()?.setup {
+            addType<Entry>(R.layout.item_monitor)
+            onBind {
+                val info = getModel<Entry>()
+                Log.i("AAA", "info=" + info.latencyMicro)
+                var f = info.latencyMicro.toFloat() / 550f
+                if (f > 1) {
+                    f = 1f
+                }
+                val length = f * maxWidth
+                val item = findView<View>(R.id.monitorItem)
+                item.layoutParams.width = length.toInt()
+                item.tag = info
+                when (info.msgType) {
+                    MsgType.ClusterMsg -> {
+                        item.setBackgroundColor(Color.parseColor("#807C7C"))
                     }
-                    Log.i("BBBB","----------------------")
-                    adapter.list.add(0, entry)
-                    adapter.notifyItemInserted(0)
-                    recyclerView.scrollToPosition(0)
+                    MsgType.RollingMsg -> {
+                        item.setBackgroundColor(Color.parseColor("#96c485"))
+                    }
+                    MsgType.FatMsg -> {
+                        item.setBackgroundColor(Color.parseColor("#e15436"))
+                    }
+                    MsgType.SystemMsg -> {
+                        item.setBackgroundColor(Color.parseColor("#78b3f3"))
+                    }
+                    else -> {
+                        item.setBackgroundColor(Color.parseColor("#807C7C"))
+                    }
+                }
+                item.setOnClickListener {
+                    val list = mutableListOf<DetailInfo>()
+                    list.add(DetailInfo("消息类型", info.msgType?.name.toString()))
+                    list.add(DetailInfo("记录时间", info.currTime.toString()))
+                    list.add(DetailInfo("记录次数", info.recordedMessageCount.toString()))
+                    list.add(DetailInfo("What", info.msgWhat.toString()))
+                    list.add(DetailInfo("mH what", info.mHMsgWhat.toString()))
+                    list.add(DetailInfo("消息耗时", info.latencyMicro.toString()))
+                    list.add(DetailInfo("Handler", info.handlerClassName.toString()))
+                    list.add(DetailInfo("Callback", info.messageName.toString()))
+                    list.add(DetailInfo("stack", info.stack.toString()))
+                    detailView?.models = list
                 }
             }
-        }
+        }?.models = mutableListOf<Entry>()
     }
 
-    fun setMargins(view: View, left: Int, top: Int, right: Int, bottom: Int, requestLayout: Boolean) {
-        if (view.layoutParams is ViewGroup.MarginLayoutParams) {
-            val p = view.layoutParams as ViewGroup.MarginLayoutParams
-            p.setMargins(left, top, right, bottom)
-            if (requestLayout) {
-                view.requestLayout()
+    private fun initDetailInfo() {
+        detailView?.linear()?.setup {
+            addType<DetailInfo>(R.layout.item_detail)
+            onBind {
+                R.id.titleName.setText(getModel<DetailInfo>().title)
+                R.id.detailInfo.setText(getModel<DetailInfo>().detail)
             }
-        }
+        }?.models = mutableListOf<DetailInfo>()
     }
-
-
 }
 
-
-class MonitorAdapter : RecyclerView.Adapter<MonitorAdapter.MonitorHolder>() {
-
-    val list = mutableListOf<Entry>()
-    val maxWidth = Resources.getSystem().displayMetrics.widthPixels - dp(60f)
-
-    class MonitorHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val monitorItem: View
-
-        init {
-            monitorItem = itemView.findViewById(R.id.monitorItem)
+fun setMargins(view: View, left: Int, top: Int, right: Int, bottom: Int, requestLayout: Boolean) {
+    if (view.layoutParams is ViewGroup.MarginLayoutParams) {
+        val p = view.layoutParams as ViewGroup.MarginLayoutParams
+        p.setMargins(left, top, right, bottom)
+        if (requestLayout) {
+            view.requestLayout()
         }
     }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MonitorHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_monitor, parent, false)
-        return MonitorHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: MonitorHolder, position: Int) {
-        val info = list[position]
-        var f = info.latencyMicro.toFloat() / 550f
-        if (f > 1) {
-            f = 1f
-        }
-        val length = f * maxWidth
-        holder.monitorItem.layoutParams.width = length.toInt()
-        holder.monitorItem.tag = info
-        when (info.msgType) {
-            MsgType.ClusterMsg -> {
-                holder.monitorItem.setBackgroundColor(Color.parseColor("#807C7C"))
-            }
-            MsgType.RollingMsg -> {
-                holder.monitorItem.setBackgroundColor(Color.parseColor("#96c485"))
-            }
-            MsgType.FatMsg -> {
-                holder.monitorItem.setBackgroundColor(Color.parseColor("#e15436"))
-            }
-            MsgType.SystemMsg -> {
-                holder.monitorItem.setBackgroundColor(Color.parseColor("#78b3f3"))
-            }
-            else -> {
-                holder.monitorItem.setBackgroundColor(Color.parseColor("#807C7C"))
-            }
-        }
-        holder.monitorItem.setOnClickListener {
-            Toast.makeText(it.context, info.msgType?.name, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun getItemCount(): Int = list.size
 }
 
 fun dp(dp: Float): Int {
@@ -210,3 +187,5 @@ fun dp(dp: Float): Int {
         Resources.getSystem().displayMetrics
     ).toInt()
 }
+
+data class DetailInfo(var title: String, var detail: String)

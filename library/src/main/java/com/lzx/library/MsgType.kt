@@ -1,8 +1,8 @@
 package com.lzx.library
 
 enum class MsgType {
-    ClusterMsg,
     RollingMsg,
+    ClusterMsg,
     FatMsg,
     SystemMsg,
     PendingMsg

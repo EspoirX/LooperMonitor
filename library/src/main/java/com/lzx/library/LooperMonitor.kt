@@ -121,7 +121,6 @@ object LooperMonitor {
                                     }
                                 }
                                 if (entry.latencyMicro > 30) {
-                                    Log.i("BBBB", "name = " + entry.msgType?.name)
                                     callback?.onEntry(entry)
                                 }
                             }

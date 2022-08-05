@@ -11,6 +11,13 @@
         android:layout_height="wrap_content"
         android:text="dump" />
 
+    <Button
+        android:id="@+id/start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/btn"
+        android:text="开始监听" />
+
     <RelativeLayout
         android:id="@+id/monitorLayout"
         android:layout_width="match_parent"
@@ -123,39 +130,12 @@
             android:visibility="visible" />
     </RelativeLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/detailInfo"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@+id/monitorLayout"
         android:layout_marginLeft="15dp"
         android:layout_marginTop="10dp"
-        android:layout_marginRight="15dp"
-        android:scrollbars="none">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="50dp"
-                    android:layout_height="wrap_content"
-                    android:text="类型"
-                    android:textColor="#000" />
-
-                <TextView
-                    android:id="@+id/msgType"
-                    android:textColor="#000"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"/>
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </androidx.core.widget.NestedScrollView>
+        android:layout_marginRight="15dp" />
 </RelativeLayout>
